@@ -67,6 +67,6 @@ def get_optimizer(net, **kwargs):
     params = net.parameters()
     lr = kwargs['lr']
     momentum = kwargs['momentum']
-    weight_decay = kwargs['weigth_decay']
+    weight_decay = kwargs['weight_decay']
 
     return SGD(params, lr=lr, momentum=momentum, weight_decay=weight_decay)

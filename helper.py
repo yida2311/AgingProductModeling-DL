@@ -23,7 +23,7 @@ def create_model_load_weights(n_class, evaluation=False, path=None):
 def collate(batch):
     batch_dict = {}
     for key in batch[0].keys():
-        batch_dict[key] = [b[key] for b in batch_dict]
+        batch_dict[key] = torch.stack([b[key] for b in batch])
     return batch_dict
 
 
@@ -51,9 +51,10 @@ class Trainer(object):
         self.optimizer.step()
         self.optimizer.zero_grad()
 
-        preds = outputs.cpu().numpy() # N x K
+        preds = outputs.detach().cpu().numpy() # N x K
+        targets = labels.detach().cpu().numpy()
         preds = (preds > 0.5)
-        self.metrics.update(labels, preds)
+        self.metrics.update(targets, preds)
         
         return loss
 
@@ -71,7 +72,7 @@ class Evaluator(object):
         self.metrics.reset()
     
     def eval(self, sample, model):
-        model.val()
+        model.eval()
         with torch.no_grad():
             imgs = sample['img'].cuda()
             if not self.test:
@@ -79,7 +80,8 @@ class Evaluator(object):
             
             outputs = model.forward(imgs)
             preds = outputs.cpu().numpy() # N x K
+            targets = labels.cpu().numpy()
             preds = (preds > 0.5)
-            self.metrics.update(labels, preds)
+            self.metrics.update(targets, preds)
         
         return preds

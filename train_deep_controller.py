@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from dataset.deep_controller import DeepController, get_dataset
 from utils.loss import BCELoss 
 from utils.solver import LR_Scheduler, get_optimizer
-from utils.metrics import AverageMeter, ClsScorer
+from utils.metric import AverageMeter, ClsScorer
 from helper import create_model_load_weights, Trainer, Evaluator, collate
 from option import Options
 
@@ -38,7 +38,7 @@ print(task_name)
 
 evaluation = args.evaluation
 test = evaluation and False
-print("mode:", mode, "evaluation:", evaluation, "test:", test)
+print("evaluation:", evaluation, "test:", test)
 
 ###################################
 print("preparing datasets and dataloaders......")
@@ -48,14 +48,14 @@ data_time = AverageMeter("DataTime", ':6.3f')
 batch_time = AverageMeter("BatchTime", ':6.3f')
 
 dataset_train = get_dataset(data_path, meta_path, train=True)
-dataloader_train = DataLoader(dataloader_train, num_workers=4, batch_size=batch_size, collate_fn=collate, shuffle=True, pin_memory=True)
+dataloader_train = DataLoader(dataset_train, num_workers=4, batch_size=batch_size, collate_fn=collate, shuffle=True, pin_memory=True)
 dataset_val = get_dataset(data_path, meta_path, train=False)
-dataloader_train = DataLoader(dataloader_val, num_workers=4, batch_size=batch_size, collate_fn=collate, shuffle=False, pin_memory=True)
+dataloader_val = DataLoader(dataset_val, num_workers=4, batch_size=batch_size, collate_fn=collate, shuffle=False, pin_memory=True)
 
 ###################################
 print("creating models......")
 
-path = os.path.join(model_path, args.test_path) if args.test_pat else args.test_path
+path = os.path.join(model_path, args.path_test) if args.path_test else args.path_test
 model = create_model_load_weights(n_class, evaluation, path=path)
 
 ###################################
@@ -65,7 +65,7 @@ momentum = args.momentum
 weight_decay = args.weight_decay
 opt_args = dict(lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
 
-optimizer = get_optimizer(model, opt_args)
+optimizer = get_optimizer(model, **opt_args)
 scheduler = LR_Scheduler('poly', learning_rate, num_epochs, len(dataloader_train))
 ##################################
 
@@ -91,7 +91,7 @@ for epoch in range(num_epochs):
         if evaluation:  # evaluation pattern: no training
             break
         scheduler(optimizer, i_batch, epoch, best_pred)
-        loss = trainer.train(sample_batched, model, global_fixed)
+        loss = trainer.train(sample_batched, model)
         train_loss += loss.item()
 
         score_train = trainer.get_scores()
@@ -145,12 +145,12 @@ for epoch in range(num_epochs):
                 evaluator.reset_metrics()
                 if score_val['mAP'] > best_pred: 
                     best_pred = score_val['mAP']
-                    torch.save(model.state_dict(), "./saved_models/" + task_name + ".pth")
+                    torch.save(model.state_dict(), "./results/saved_models/" + task_name + ".pth")
             
                 log = ""
-                log = log + 'epoch [{}/{}] Percision: train = {:.4f}, val = {:.4f}'.format(epoch+1, num_epochs, score_train['precision'], score_val['precision'] + "\n"
-                log = log + 'epoch [{}/{}] mAP: train = {:.4f}, val = {:.4f}'.format(epoch+1, num_epochs, score_train['mAP'], score_val['mAP'] + "\n"
-                log = log + 'epoch [{}/{}] Distance: train = {:.4f}, val = {:.4f}'.format(epoch+1, num_epochs, score_train['distance'], score_val['distance'] + "\n"
+                log = log + 'epoch [{}/{}] Percision: train = {:.4f}, val = {:.4f}'.format(epoch+1, num_epochs, score_train['precision'], score_val['precision']) + "\n"
+                log = log + 'epoch [{}/{}] mAP: train = {:.4f}, val = {:.4f}'.format(epoch+1, num_epochs, score_train['mAP'], score_val['mAP']) + "\n"
+                log = log + 'epoch [{}/{}] Distance: train = {:.4f}, val = {:.4f}'.format(epoch+1, num_epochs, score_train['distance'], score_val['distance']) + "\n"
                 log = log + "train: " + str(score_train) + "\n"
                 log = log + "val:" + str(score_val) + "\n"
                 log += "================================\n"

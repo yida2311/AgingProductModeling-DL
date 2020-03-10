@@ -37,7 +37,9 @@ class ClsScorer(object):
     def update(self, labels, preds):
         # N x K
         size = labels.shape[0]
+        # print(labels.shape, preds.shape)
         results = np.array(labels == preds, dtype=np.int)
+        # print(results.shape)
         hist = results.sum(axis=1)
 
         self.count += size
@@ -66,7 +68,7 @@ class ClsScorer(object):
     def reset(self):
         self.count = 0 
         self.right = 0 
-        self.right_labels = np.zeros(n_classes)
+        self.right_labels = np.zeros(self.n_classes)
         self.distance = 0
 
 

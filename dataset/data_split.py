@@ -18,7 +18,7 @@ def trainval_split(root, save_dir):
     print('Finished!')
 
 
-if __name__ == '__main__:
-    root = ''
-    save_dir = ''
+if __name__ == '__main__':
+    root = "/remote-home/ldy/data/controller/controller-3.8"
+    save_dir = "/remote-home/ldy/data/controller/"
     trainval_split(root, save_dir)
